@@ -58,7 +58,7 @@ make install
 popd
 ```
 
-В файле *common.cmake* измените строку:
+В файле [common.cmake](invaders-must-die/common.cmake) измените строку:
 
 ```bash
 add_subdirectory(third-party/grpc ${CMAKE_CURRENT_BINARY_DIR}/grpc EXCLUDE_FROM_ALL)
