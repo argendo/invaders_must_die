@@ -1,0 +1,6 @@
+CREATE TABLE IF NOT EXISTS alerts (
+    id SERIAL PRIMARY KEY,
+    alert_name VARCHAR(50) NOT NULL,
+    src_ip VARCHAR(255) NOT NULL,
+    dst_ip VARCHAR(255) NOT NULL
+);

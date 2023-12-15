@@ -1,0 +1,27 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"type": "cmake",
+			"label": "CMake: build",
+			"command": "build",
+			"targets": [
+				"libpcap-demo"
+			],
+			"group": "build",
+			"problemMatcher": [],
+			"detail": "CMake template build task"
+		},
+		{
+			"label": "Build",
+			"dependsOn": [
+				"CMake: build",
+			],
+			"type": "shell",
+			"command": "${workspaceFolder}/setperm.sh",
+			"args": [
+				"${command:cmake.launchTargetPath}"
+			]
+		}
+	]
+}

@@ -1,0 +1,16 @@
+version: '3.8'
+
+services:
+  stand-up:
+    build: .
+    ports:
+      - 50051:50051 
+  postgres:
+    image: postgres:latest
+    container_name: postgres
+    environment:
+      POSTGRES_DB: alerts
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - ./sql:/docker-entrypoint-initdb.d

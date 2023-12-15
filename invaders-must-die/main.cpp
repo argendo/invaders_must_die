@@ -3,20 +3,33 @@
 #include <string.h>
 #include <sys/types.h>
 #include <unistd.h>
-#include "ip.h"
+#include <sys/stat.h>
+#include <fcntl.h>
 
-#define JOURNALD_LOGGING
+#include <grpcpp/grpcpp.h>
+#include "src/grpc_sender/grpc_sender.h"
+
+#include "include/ip.h"
+#include "include/errors.h"
+
+#include "src/detector/detector.hpp"
+#include "src/console_sender/console_sender.hpp"
+
+
+
+//#define JOURNALD_LOGGING
 
 #ifndef JOURNALD_LOGGING
 extern "C"
 {
-#include "log.c/log.h"
+    #include "src/log.c/log.h"
 }
 
-#define log_t(...) log_trace(__LINE__, __VA_ARGS__)
-#define log_e(...) log_e(__LINE__, __VA_ARGS__)
-#define log_w(...) log_warning(__LINE__, __VA_ARGS__)
-#define log_i(...) log_info(__LINE__, __VA_ARGS__)
+#define log_t(...) log_trace(__VA_ARGS__)
+#define log_e(...) log_error(__VA_ARGS__)
+#define log_w(...) log_warn(__VA_ARGS__)
+#define log_i(...) log_info(__VA_ARGS__)
+
 #else
 #include <systemd/sd-journal.h>
 
@@ -33,15 +46,44 @@ typedef void (*process_packet)(u_char *user, const struct pcap_pkthdr *h,
 
 void handler(u_char *user, const struct pcap_pkthdr *h,
              const u_char *bytes);
-int main(int, char **)
-{
+int main(int argc, char ** argv)
+{  
+
+    int opt;
+
+    std::string interface_name;
+    std::string rule_path;
+    std::string grpc_host;
+
+    while ((opt = getopt(argc, argv, "i:r:h:")) != -1) {
+        switch (opt)
+        {
+        case 'i':
+            interface_name = optarg;
+            break;
+        case 'r':
+            rule_path = optarg;
+            break;
+        case 'h':
+            grpc_host = optarg;
+            break;
+
+        default:
+            break;
+        }
+    }
+    
+    if (interface_name.empty() || rule_path.empty() || grpc_host.empty()) {
+        printf("Usage: libpcap-demo -i [interface] -r [yara rule] -h [grpc host]\n");
+        return 0;
+    }
+
     if (pcap_init(PCAP_CHAR_ENC_UTF_8, ERR_BUF) != 0)
     {
         log_e(ERR_BUF);
         return -1;
     }
 
-    // searching for interfaces
     pcap_if_t *device_list;
     if (pcap_findalldevs(&device_list, ERR_BUF) != 0)
     {
@@ -49,22 +91,20 @@ int main(int, char **)
         return -1;
     }
 
-    // choosing interface to listen
     do
     {
-        if (strcmp(device_list->name, "eno1") == 0)
+        if (strcmp(device_list->name, interface_name.c_str()) == 0)
         {
             break;
         }
-    } while (device_list = device_list->next);
+    } while ((device_list = device_list->next));
 
     if (device_list == NULL)
     {
-        log_e("No interface eno1");
+        log_e("No interface %s", interface_name.c_str());
         return -1;
     }
 
-    // capturing object creating
     pcap_t *capture = pcap_create(device_list->name, ERR_BUF);
 
     if (capture == NULL)
@@ -74,11 +114,8 @@ int main(int, char **)
         return -1;
     }
 
-    // erasing device_list
     pcap_freealldevs(device_list);
 
-
-    // "all packets mode"
     if (pcap_set_promisc(capture, 1))
     {
         log_e(pcap_geterr(capture));
@@ -86,7 +123,6 @@ int main(int, char **)
         return -1;
     }
 
-    // immediate mode (no delay between int and analysis)
     if (pcap_set_immediate_mode(capture, 1) != 0)
     {
         log_e(pcap_geterr(capture));
@@ -94,7 +130,6 @@ int main(int, char **)
         return -1;
     }
 
-    // enabling capturing object
     if (pcap_activate(capture) != 0)
     {
         log_e(pcap_geterr(capture));
@@ -102,27 +137,44 @@ int main(int, char **)
         return -1;
     }
 
-    // storing data in capture.pcap
-    pcap_dumper_t *f_dumper = pcap_dump_open(capture, "capture.pcap");
+    log_i("Start detector creation");
+    //pcap_dumper_t *f_dumper = pcap_dump_open(capture, "capture.pcap");
+    FILE* yara_rules = fopen(rule_path.c_str(), "r");
 
-    // endless capturing loop
+    if (yara_rules == NULL) {
+        log_e("Cant find rules at %s", rule_path.c_str());
+        return D_ERR_YARA_FILE;
+    }
+    char cwd[PATH_MAX];
+    getcwd(cwd, sizeof(cwd));
+
+    std::string file_path = std::string(rule_path.c_str());
+    std::string dir_path = file_path.substr(0, file_path.find_last_of("\\/"));
+     
+    chdir(dir_path.c_str());
+    //ConsoleSender s =  ConsoleSender();
+    const auto creds = grpc::InsecureChannelCredentials();
+    GrpcSender s(grpc::CreateChannel(grpc_host.c_str(), creds));
+    Detector d(&s, yara_rules);
+    chdir(cwd);
+
+    log_i("Main loop started");
+
     while (true)
     {
         pcap_pkthdr *p_head;
         const u_char *p_data;
 
-        // analysis func calling (handler)
-        pcap_dispatch(capture, 1, (process_packet)handler, (u_char *)f_dumper);
+        pcap_dispatch(capture, 1, (process_packet)handler, (u_char *)&d);
     }
 }
 
-// analysis func
 void handler(u_char *user, const struct pcap_pkthdr *h,
              const u_char *packet)
 {
     /* ethernet headers are always exactly 14 bytes */
-    // writing packet to the file
-    pcap_dump(user, h, packet);
+    //pcap_dump(user, h, packet);
+    Detector* d = (Detector*)user;
     const struct sniff_ethernet *ethernet; /* The ethernet header */
     const struct sniff_ip *ip;             /* The IP header */
     const struct sniff_tcp *tcp;           /* The TCP header */
@@ -131,12 +183,11 @@ void handler(u_char *user, const struct pcap_pkthdr *h,
     u_int size_ip;
     u_int size_tcp;
 
-    // getting ethernet, ip, tcp headers from the packet 
     ethernet = (struct sniff_ethernet *)(packet);
 
     if (ethernet->ether_type != IP_TYPE)
     {
-        log_w("Only IP packets can be handled 0x%08x\n", ethernet->ether_type);
+        //log_w("Only IP packets can be handled 0x%08x\n", ethernet->ether_type);
         return;
     }
 
@@ -145,7 +196,7 @@ void handler(u_char *user, const struct pcap_pkthdr *h,
 
     if (size_ip < 20)
     {
-        log_w("* Invalid IP header length: %u bytes\n", size_ip);
+        //log_w("* Invalid IP header length: %u bytes\n", size_ip);
         return;
     }
 
@@ -154,22 +205,21 @@ void handler(u_char *user, const struct pcap_pkthdr *h,
 
     if (size_tcp < 20)
     {
-        log_w("   * Invalid TCP header length: %u bytes\n", size_tcp);
+        //log_w("   * Invalid TCP header length: %u bytes\n", size_tcp);
         return;
     }
 
-    // getting payload from packet
     payload = (u_char *)(packet + SIZE_ETHERNET + size_ip + size_tcp);
     char src_str[INET_ADDRSTRLEN];
     char dst_str[INET_ADDRSTRLEN];
     inet_ntop(AF_INET, &(ip->ip_src), src_str, INET_ADDRSTRLEN);
     inet_ntop(AF_INET, &(ip->ip_dst), dst_str, INET_ADDRSTRLEN);
 
-// throwing away 127.0.0.1 src and dst
-/*
-    if (!((strcmp(src_str, "127.0.0.1") == 0) || (strcmp(dst_str, "127.0.0.1") == 0)))
-    {
-        log_i("Packet captured From: %s To: %s", src_str, dst_str);
-    }
-*/
+    //if (!((strcmp(src_str, "192.168.203.1") == 0) || (strcmp(dst_str, "192.168.203.1") == 0)))
+    //{
+    //    log_i("Packet captured From: %s To: %s", src_str, dst_str);
+    //}
+    //log_i("before Check payload");
+    d->check_tcp_payload(payload, h->len - (SIZE_ETHERNET + size_ip + size_tcp), src_str, dst_str);
+    //log_i("after Check payload");
 }

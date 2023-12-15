@@ -1,3 +1,5 @@
+project(logc VERSION 0.1.0 LANGUAGES C)
+
 add_library(logc "")
 
 target_sources(logc

@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package alerts;
+
+service AlertCapturer {
+    rpc SendAlert (Alert) returns (Result) {}
+}
+
+message Alert {
+    string d_ip = 1;
+    string src_ip = 2;
+    
+    enum RuleType {
+        RULE_NOTE = 0;
+        RULE_WARN = 1;
+        RULE_ALERT = 2;
+    }
+
+    RuleType rule_type = 3;
+    string date = 4;
+    string rule_name = 5;
+}
+
+message Result {
+    enum ResultType {
+        RES_OK = 0;
+        RES_ERR = 1;
+    }
+
+    ResultType res_type = 1;
+}

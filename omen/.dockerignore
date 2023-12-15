@@ -1,0 +1,11 @@
+.venv
+.vscode
+__pycache__
+build
+alert_pb2_grpc.py
+alert_pb2.py
+alert_pb2.pyi
+Dockerfile
+README.md
+compose.yml
+users.db

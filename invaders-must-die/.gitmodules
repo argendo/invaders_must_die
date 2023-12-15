@@ -1,0 +1,6 @@
+[submodule "rules"]
+	path = third-party/rules
+	url = https://github.com/Yara-Rules/rules.git
+[submodule "third-party/grpc"]
+	path = third-party/grpc
+	url = https://github.com/grpc/grpc.git
