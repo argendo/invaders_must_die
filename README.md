@@ -167,7 +167,7 @@ python3 app.py
 
 #### или с помощью Docker
 
-Перед запуском в файле [compose.yml](omen/compose.yml) необходимо задать переменной GRPC_HOST значение вида: `ip_машины_на_которой_развернут_invaders_mush_die:50051`
+Перед запуском в файле [Dockerfile](omen/Dockerfile) необходимо задать переменной GRPC_HOST значение вида: `ip_машины_на_которой_развернут_invaders_mush_die:50051`
 
 Запуск с помощью `docker-compose`:
 
