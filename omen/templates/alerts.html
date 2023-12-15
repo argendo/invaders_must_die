@@ -49,22 +49,22 @@
 </head>
 
 <body>
-    <h1>Alerts Table</h1>
+    <h1>OMENS TABLE</h1>
     <div class="container">
         <table class="table table-striped table-bordered">
             <thead class="thead-light">
                 <tr>
-                    <th>ID</th>
-                    <th>Destination IP</th>
-                    <th>Source IP</th>
+                    <th>TRIGGERED RULE</th>
+                    <th>SOURCE IP</th>
+                    <th>DESTINATION IP</th>
                 </tr>
             </thead>
             <tbody>
                 {% for alert in alerts %}
                 <tr>
                     <td>{{ alert.name }}</td>
-                    <td>{{ alert.dst_ip }}</td>
                     <td>{{ alert.src_ip }}</td>
+                    <td>{{ alert.dst_ip }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
