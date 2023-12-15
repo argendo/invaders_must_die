@@ -99,7 +99,7 @@ make
 Пример использования сенсора с указанием интерфейса, файла с правилами и адреса сервиса для отправки событий:
 
 ```bash
-./libpcap-demo -i ens33 -r example.yar -h localhost:50051
+./invaders-must-die -i ens33 -r example.yar -h localhost:50051
 ```
 
 ## stand-up
