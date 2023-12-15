@@ -23,7 +23,8 @@ git clone https://github.com/Argendo/invaders_must_die.git
 Перейдите в папку проекта и установите gRPC:
 
 ```bash
-$ export MY_INSTALL_DIR=$HOME/.local
+cd invaders_must_die
+export MY_INSTALL_DIR=$HOME/.local
 export PATH="$MY_INSTALL_DIR/bin:$PATH"
 sudo apt install -y build-essential autoconf libtool pkg-config cmake
 git clone --recurse-submodules -b v1.60.0 --depth 1 --shallow-submodules https://github.com/grpc/grpc
