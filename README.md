@@ -27,16 +27,34 @@ cd invaders_must_die
 export MY_INSTALL_DIR=$HOME/.local
 export PATH="$MY_INSTALL_DIR/bin:$PATH"
 sudo apt install -y build-essential autoconf libtool pkg-config cmake
+```
+
+```bash
 git clone --recurse-submodules -b v1.60.0 --depth 1 --shallow-submodules https://github.com/grpc/grpc
+```
+
+```bash
 cd grpc
 mkdir -p cmake/build
 pushd cmake/build
+``` 
+
+```bash
 cmake -DgRPC_INSTALL=ON \
       -DgRPC_BUILD_TESTS=OFF \
       -DCMAKE_INSTALL_PREFIX=$MY_INSTALL_DIR \
       ../..
+```
+
+```bash
 make -j 4
+```
+
+```bash
 make install
+```
+
+```bash
 popd
 ```
 
