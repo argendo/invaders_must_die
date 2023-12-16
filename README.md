@@ -99,7 +99,7 @@ make
 Пример использования сенсора с указанием интерфейса, файла с правилами и адреса сервиса для отправки событий:
 
 ```bash
-./invaders-must-die -i ens33 -r example.yar -h localhost:50051
+./invaders-must-die -i eth0 -r rules.yar -h localhost:50051
 ```
 
 ## stand-up
