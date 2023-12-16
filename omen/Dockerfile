@@ -13,6 +13,6 @@ RUN python -m grpc_tools.protoc -I=proto --python_out=. --pyi_out=. --grpc_pytho
 RUN python3 init_db.py
 EXPOSE 80
 
-ENV GRPC_HOST="172.17.0.3:50051"
+ENV GRPC_HOST="127.0.0.1:50051"
 
 CMD [ "python3", "app.py"]
