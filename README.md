@@ -82,6 +82,11 @@ add_subdirectory(полный_путь_к_папке_проекта/grpc ${CMAKE
 libpcap-dev libsystemd-dev libyara-dev libpcap-dev libgrpc-dev
 ```
 
+Устанавливаем submodules
+```bash
+git submodule update --init
+```
+
 Создаём директорию для сборки и конфигурируем `Cmake`:
 
 ```bash
